@@ -1,6 +1,4 @@
-import numpy as np
 import NN
-from utils import create_batches
 
 from mnist_data import x_train as X
 from mnist_data import y_train_reformatted as y
@@ -9,13 +7,12 @@ from mnist_data import y_train_reformatted as y
 
 
 nn = NN.NN(loss_func=NN.MeanSquaredLoss())
-nn.add_layer(NN.DenseLayer(128, NN.Sigmoid()))
-nn.add_layer(NN.DenseLayer(10, NN.Sigmoid()))
+# nn = NN.NN(loss_func=NN.SoftMaxCrossEntropyLoss(softmax_clip_eps=1e-7))
+nn.add_layer(NN.DenseLayer(128, NN.Sigmoid(), weight_initialisation='glorot'))
+nn.add_layer(NN.DenseLayer(10, NN.Sigmoid(), weight_initialisation='glorot'))
 
+# optimizer = NN.SGD(learning_rate=0.01)
+optimizer = NN.MomentumSGD(learning_rate=0.01, momentum=0.8)
+trainer = NN.Trainer(nn, optimizer)
 
-while True:
-    for X1, y1 in create_batches(X, y):
-        loss = nn.eval(X1, y1)
-        print(loss)
-        for parameter, parameter_grad in zip(nn.parameters, nn.parameter_gradients):
-            parameter -= 0.0001 * parameter_grad
+trainer.optimize(X, y, batch_size=50, epochs=50)

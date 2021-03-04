@@ -94,6 +94,24 @@ class TestMeanSquaredLoss:
         np.testing.assert_array_equal(rv, np.full((5, 3), 4))
 
 
+class TestSoftmaxCrossEntropyLoss:
+    def test_softmax(self):
+        simulated = np.random.random((5, 3))
+        true = np.random.random((5, 3))
+        loss = NN.SoftMaxCrossEntropyLoss()
+        loss.forward(simulated, true)
+        rv = loss.softmax()
+        assert all(line.sum() == 1 for line in rv)
+
+    def test_forward(self):
+        simulated = np.random.random((5, 3))
+        loss = NN.SoftMaxCrossEntropyLoss()
+
+
+    def test_backward(self):
+        pass
+
+
 class TestNN:
     def test_forward(self):
         input_ = np.random.random((5, 3))
