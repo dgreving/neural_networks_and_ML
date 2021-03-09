@@ -58,18 +58,44 @@ class TestOperations:
         rv = op.backward(output_grad)
         assert rv.shape == input_.shape
 
+    def test_ConvChannel_forward(self):
+        batch_size, num_channels, x_px, y_px = 3, 4, 9, 12
+        num_out = 5
+        input_ = np.random.random((batch_size, num_channels, x_px, y_px))
+        weight_kernel = np.random.random((num_channels, num_out, 3, 3))
+        op = NN.ConvChannel(weight_kernel)
+        rv = op.forward(input_)
+        assert rv.shape == (batch_size, num_out, x_px, y_px)
+
+    def test_ConvChannel_backward(self):
+        batch_size, num_input_channels, num_output_channels, x_px, y_px = 3, 4, 5, 9, 12
+        input_ = np.random.random((batch_size, num_input_channels, x_px, y_px))
+        output_grad = np.random.random((batch_size, num_output_channels, x_px, y_px))
+        weight_kernel = np.random.random((num_input_channels, num_output_channels, 3, 3))
+        op = NN.ConvChannel(weight_kernel)
+        op.forward(input_)
+        rv = op.backward(output_grad)
+        assert rv.shape == input_.shape
+        assert op.grad_parameters.shape == weight_kernel.shape
+
+    def test_Pool(self):
+        batch_size, num_input_channels, num_output_channels, x_px, y_px = 3, 4, 5, 9, 12
+        input_ = np.random.random((batch_size, num_input_channels, x_px, y_px))
+        op = NN.Pool(2)
+        op.forward(input_)
+
 
 class TestLayer:
     def test_DenseLayer_forward(self):
         input_ = np.random.random((5, 4))
-        layer = NN.DenseLayer(3)
+        layer = NN.DenseLayer(3, activation_func=NN.Sigmoid())
         rv = layer.forward(input_)
         assert rv.shape == (5, 3)
 
     def test_DenseLayer_backward(self):
         input_ = np.random.random((5, 4))
         valid_output_grad = np.random.random((5, 3))
-        layer = NN.DenseLayer(3)
+        layer = NN.DenseLayer(3, activation_func=NN.Sigmoid())
         layer.forward(input_)
         rv = layer.backward(valid_output_grad)
         assert rv.shape == input_.shape
@@ -85,13 +111,13 @@ class TestMeanSquaredLoss:
 
     def test_backward(self):
         loss = NN.MeanSquaredLoss()
-        simulated = np.full((5, 3), 10)
-        true = np.full((5, 3), 8)
+        simulated = np.full((1, 5, 3), 10)
+        true = np.full((1, 5, 3), 8)
         with pytest.raises(TypeError):
             loss.backward()
         loss.forward(simulated, true)
         rv = loss.backward()
-        np.testing.assert_array_equal(rv, np.full((5, 3), 4))
+        np.testing.assert_array_equal(rv, np.full((1, 5, 3), 4.))
 
 
 class TestSoftmaxCrossEntropyLoss:
@@ -101,7 +127,7 @@ class TestSoftmaxCrossEntropyLoss:
         loss = NN.SoftMaxCrossEntropyLoss()
         loss.forward(simulated, true)
         rv = loss.softmax()
-        assert all(line.sum() == 1 for line in rv)
+        assert all(np.isclose(line.sum(), 1) for line in rv)
 
     def test_forward(self):
         simulated = np.random.random((5, 3))
@@ -116,8 +142,8 @@ class TestNN:
     def test_forward(self):
         input_ = np.random.random((5, 3))
         nn = NN.NN(loss_func=NN.MeanSquaredLoss())
-        nn.add_layer(NN.DenseLayer(n_neurons=5))
-        nn.add_layer(NN.DenseLayer(n_neurons=7))
+        nn.add_layer(NN.DenseLayer(n_neurons=5, activation_func=NN.Sigmoid()))
+        nn.add_layer(NN.DenseLayer(n_neurons=7, activation_func=NN.Sigmoid()))
         rv = nn.forward(input_)
         assert rv.shape == (5, 7)
 
